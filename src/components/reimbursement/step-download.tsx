@@ -22,14 +22,14 @@ export function StepDownload() {
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         <Button variant="outline" onClick={reset}>
           <RotateCw className="h-4 w-4 mr-1" /> 处理新的报销单
         </Button>
         <Button variant="outline" onClick={() => setStep(3)}>
           <ArrowLeft className="h-4 w-4 mr-1" /> 返回预览编辑
         </Button>
-        <Button onClick={downloadResult} size="lg">
+        <Button onClick={downloadResult}>
           <FileDown className="h-4 w-4 mr-1" />
           重新下载{isZip ? " ZIP" : " Excel"}
         </Button>

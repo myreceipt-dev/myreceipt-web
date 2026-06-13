@@ -3,7 +3,6 @@
 import { useReimbursementStore } from "@/stores/reimbursement-store";
 import { FileUploadZone } from "./file-upload-zone";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/utils/cn";
 
 const IMAGE_ACCEPT = {
   "image/*": [".png", ".jpg", ".jpeg", ".webp", ".bmp"],
@@ -17,15 +16,12 @@ const ZIP_ACCEPT = {
   "application/zip": [".zip"],
 };
 
-const TABS = [
-  { key: "manual" as const, label: "分步上传" },
-  { key: "zip" as const, label: "ZIP 打包上传" },
-];
+interface StepUploadProps {
+  mode: "manual" | "zip";
+}
 
-export function StepUpload() {
+export function StepUpload({ mode }: StepUploadProps) {
   const {
-    mode,
-    setMode,
     images,
     setImages,
     template,
@@ -42,25 +38,6 @@ export function StepUpload() {
 
   return (
     <div className="space-y-6">
-      {/* Tab switcher — simple buttons, no library dependency */}
-      <div className="inline-flex w-full rounded-lg bg-muted p-1" role="tablist">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            role="tab"
-            aria-selected={mode === tab.key}
-            onClick={() => setMode(tab.key)}
-            className={cn(
-              "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              mode === tab.key
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {/* Panel: 分步上传 */}
       {mode === "manual" && (
@@ -78,7 +55,7 @@ export function StepUpload() {
             maxFiles={50}
             files={images}
             onChange={setImages}
-            label="上传发票图片"
+            label="上传支付凭证截图 / 发票图片"
             hint="支持 jpg / png / webp / bmp，最多 50 张"
           />
         </div>
@@ -93,7 +70,7 @@ export function StepUpload() {
             files={zipfile ? [zipfile] : []}
             onChange={(fs) => setZipfile(fs[0] || null)}
             label="上传 ZIP 压缩包"
-            hint="包含模板 .xlsx + 发票图片的 ZIP 文件"
+            hint="包含模板 .xlsx + 支付凭证截图 + 电子发票 PDF + 打车行程单 PDF 的 ZIP 文件"
           />
         </div>
       )}

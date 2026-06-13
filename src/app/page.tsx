@@ -18,7 +18,7 @@ export default function HomePage() {
           智能报销单处理
         </h1>
         <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-          上传发票图片和 Excel 模板，AI 自动识别并生成报销单，告别手动录入
+          上传支付凭证截图和报销 Excel 模板，AI 自动识别并生成报销单，告别手动录入
         </p>
         <Button asChild size="lg" className="gap-2">
           <Link href="/reimbursement">
@@ -34,7 +34,7 @@ export default function HomePage() {
             <Upload className="h-8 w-8 text-primary mb-2" />
             <CardTitle>1. 上传文件</CardTitle>
             <CardDescription>
-              上传发票图片和报销 Excel 模板，支持分步上传或 ZIP 打包上传
+              上传支付凭证截图和报销 Excel 模板，支持分步上传或 ZIP 打包上传
             </CardDescription>
           </CardHeader>
         </Card>
@@ -44,7 +44,7 @@ export default function HomePage() {
             <Sparkles className="h-8 w-8 text-primary mb-2" />
             <CardTitle>2. AI 识别</CardTitle>
             <CardDescription>
-              Gemini AI 自动提取发票中的日期、金额、商户、类别等关键信息
+              Gemini AI 自动提取支付凭证截图、发票中的日期、金额、商户、类别等关键信息，ZIP 模式另支持电子发票 PDF、行程单 PDF
             </CardDescription>
           </CardHeader>
         </Card>

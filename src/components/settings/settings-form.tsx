@@ -85,7 +85,7 @@ export function SettingsForm() {
               onChange={(e) => setApiKey(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              密钥加密存储，仅用于 AI 识别发票信息
+              密钥加密存储，仅用于 AI 识别支付凭证截图、发票信息
             </p>
           </div>
 

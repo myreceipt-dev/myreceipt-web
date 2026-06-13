@@ -66,7 +66,7 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
     try {
       if (mode === "manual") {
         if (!template) throw new Error("请上传模板文件");
-        if (images.length === 0) throw new Error("请上传发票图片");
+        if (images.length === 0) throw new Error("请上传支付凭证截图 / 发票图片");
         const result = await analyzeReimbursement(images, template, controller.signal);
         set({ analysisResult: result, step: 3, analyzing: false, _abortController: null });
       } else {

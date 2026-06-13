@@ -17,7 +17,7 @@ export type {
 // Reimbursement API
 // ============================================================
 
-/** 分步上传：分析发票图片 + 模板，返回结构化数据 */
+/** 分步上传：分析支付凭证截图 / 发票图片 + 模板，返回结构化数据 */
 export async function analyzeReimbursement(
   images: File[],
   template: File,

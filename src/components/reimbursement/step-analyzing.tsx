@@ -51,7 +51,7 @@ function AnalyzingAnimation() {
       {/* ---- 文字 + 动态点点 ---- */}
       <div className="text-center space-y-2">
         <p className="text-lg font-semibold tracking-wide">
-          AI 正在识别发票信息
+          AI 正在识别支付凭证截图、发票信息
           <span
             className="inline-block ml-0.5"
             style={{ animation: "typing-dot 1.4s ease-in-out infinite" }}
