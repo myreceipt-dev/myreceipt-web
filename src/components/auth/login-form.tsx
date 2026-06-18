@@ -1,11 +1,11 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/stores/auth-store'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Card,
   CardContent,
@@ -13,38 +13,38 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
+} from '@/components/ui/card'
+import Link from 'next/link'
 
 export function LoginForm() {
-  const router = useRouter();
-  const login = useAuthStore((s) => s.login);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter()
+  const login = useAuthStore((s) => s.login)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError('')
 
     if (!username.trim()) {
-      setError("请输入用户名或邮箱");
-      return;
+      setError('请输入用户名或邮箱')
+      return
     }
     if (password.length < 6) {
-      setError("密码至少 6 位");
-      return;
+      setError('密码至少 6 位')
+      return
     }
 
-    setSubmitting(true);
+    setSubmitting(true)
     try {
-      await login(username.trim(), password);
-      router.push("/");
+      await login(username.trim(), password)
+      router.push('/')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "登录失败");
+      setError(err instanceof Error ? err.message : '登录失败')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   }
 
@@ -55,7 +55,7 @@ export function LoginForm() {
         <CardDescription>使用用户名或邮箱登录</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="username">用户名 / 邮箱</Label>
             <Input
@@ -79,16 +79,27 @@ export function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "登录中..." : "登录"}
+            {submitting ? '登录中...' : '登录'}
           </Button>
           <p className="text-sm text-muted-foreground">
             没有账号？
-            <Link href="/register" className="text-primary hover:underline ml-1">
+            <Link
+              href="/register"
+              className="text-primary hover:underline ml-1"
+            >
               去注册
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <Link
+              href="/forgot-password"
+              className="text-primary hover:underline"
+            >
+              忘记密码？
             </Link>
           </p>
         </CardFooter>
       </form>
     </Card>
-  );
+  )
 }
