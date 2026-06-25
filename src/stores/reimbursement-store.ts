@@ -1,9 +1,7 @@
 import { create } from "zustand";
 import {
   analyzeReimbursement,
-  analyzeReimbursementStream,
   autoAnalyze,
-  autoAnalyzeStream,
   exportReimbursement,
   autoExport,
   type ReimbursementAnalysis,
@@ -81,14 +79,9 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
       if (mode === "manual") {
         if (!template) throw new Error("请上传模板文件");
         if (images.length === 0) throw new Error("请上传支付凭证截图 / 发票图片");
-        const result = await analyzeReimbursementStream(
+        const result = await analyzeReimbursement(
           images,
           template,
-          {
-            onThinking: (text) =>
-              set((s) => ({ thinkingContent: s.thinkingContent + text })),
-            onCancelled: () => set({ step: 1, analyzing: false }),
-          },
           controller.signal,
         );
         set({
@@ -99,13 +92,8 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
         });
       } else {
         if (!zipfile) throw new Error("请上传 ZIP 文件");
-        const result = await autoAnalyzeStream(
+        const result = await autoAnalyze(
           zipfile,
-          {
-            onThinking: (text) =>
-              set((s) => ({ thinkingContent: s.thinkingContent + text })),
-            onCancelled: () => set({ step: 1, analyzing: false }),
-          },
           geminiApiKey,
           model,
           controller.signal,
