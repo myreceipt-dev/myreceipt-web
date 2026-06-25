@@ -1,14 +1,189 @@
 'use client'
 
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { useReimbursementStore } from '@/stores/reimbursement-store'
-import { Sparkles, X } from 'lucide-react'
+import { Sparkles, X, Brain, CheckCircle2, Loader2 } from 'lucide-react'
+
+// ---------------------------------------------------------------------------
+// 思考步骤解析
+// ---------------------------------------------------------------------------
+
+interface ThinkingStep {
+  title: string
+  body: string
+}
+
+/**
+ * 将 Gemini 的思考文本解析为结构化步骤。
+ * Gemini 输出格式：**Step Title**\nDescription text...
+ */
+function parseThinkingSteps(raw: string): ThinkingStep[] {
+  const parts = raw.split(/(\*\*[^*]+\*\*)/g)
+  const steps: ThinkingStep[] = []
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const title = part.slice(2, -2).trim()
+      const body =
+        i + 1 < parts.length && !parts[i + 1].startsWith('**')
+          ? parts[i + 1].trim()
+          : ''
+      if (title) {
+        steps.push({ title, body })
+      }
+    }
+  }
+
+  return steps
+}
+
+// ---------------------------------------------------------------------------
+// TypewriterText — 逐字打字动画
+// ---------------------------------------------------------------------------
+
+function TypewriterText({
+  text,
+  speed = 12,
+  className,
+  onReveal,
+}: {
+  text: string
+  speed?: number
+  className?: string
+  onReveal?: () => void
+}) {
+  const [shown, setShown] = useState(0)
+  const posRef = useRef(0)
+  const prevRef = useRef('')
+
+  useEffect(() => {
+    const prev = prevRef.current
+    prevRef.current = text
+
+    if (!text.startsWith(prev)) {
+      posRef.current = 0
+      setShown(0)
+    }
+
+    const timer = setInterval(() => {
+      posRef.current += 1
+      setShown(posRef.current)
+      onReveal?.()
+      if (posRef.current >= text.length) {
+        clearInterval(timer)
+      }
+    }, speed)
+
+    return () => clearInterval(timer)
+  }, [text, speed, onReveal])
+
+  const safeEnd = Math.min(shown, text.length)
+  return <span className={className}>{text.slice(0, safeEnd)}</span>
+}
+
+// ---------------------------------------------------------------------------
+// ThinkingPanel — 结构化展示 AI 思考过程
+// ---------------------------------------------------------------------------
+
+function ThinkingPanel() {
+  const { thinkingContent } = useReimbursementStore()
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  const steps = useMemo(() => parseThinkingSteps(thinkingContent), [thinkingContent])
+
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [])
+
+  // SSE chunk 到达时滚动
+  useEffect(() => {
+    scrollToBottom()
+  }, [thinkingContent, scrollToBottom])
+
+  if (steps.length === 0) return null
+
+  return (
+    <details className="group w-full max-w-lg" open>
+      <summary className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors select-none">
+        <Brain className="h-4 w-4" />
+        <span>AI 思考过程</span>
+        <span className="ml-auto text-xs text-muted-foreground/60 tabular-nums">
+          {steps.length} 步
+        </span>
+      </summary>
+
+      <div
+        className="mt-3 max-h-72 overflow-y-auto rounded-xl border bg-card/50 p-4"
+      >
+        <div className="relative pl-6">
+          {/* 时间线 */}
+          <div className="absolute left-2 top-1 bottom-1 w-px bg-border" />
+
+          <ol className="space-y-3">
+            {steps.map((step, i) => {
+              const isLatest = i === steps.length - 1
+              const isPrev = i === steps.length - 2
+              return (
+                <li
+                  key={i}
+                  className="relative animate-in fade-in slide-in-from-left-2 duration-300"
+                >
+                  {/* 时间线节点 */}
+                  <span className="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center">
+                    {isLatest ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    )}
+                  </span>
+
+                  {/* 步骤卡片 */}
+                  <div
+                    className={
+                      isLatest
+                        ? 'rounded-lg bg-primary/5 border border-primary/20 p-2.5'
+                        : 'rounded-lg p-2.5'
+                    }
+                  >
+                    <p className="text-sm font-semibold leading-snug">
+                      {isLatest || (isPrev && !step.body) ? (
+                        <TypewriterText text={step.title} speed={15} onReveal={scrollToBottom} />
+                      ) : (
+                        step.title
+                      )}
+                    </p>
+                    {step.body && (
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {isLatest ? (
+                          <TypewriterText text={step.body} speed={8} onReveal={scrollToBottom} />
+                        ) : (
+                          step.body.length > 120
+                            ? step.body.slice(0, 120) + '…'
+                            : step.body
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+
+          {/* 底部哨兵 — 每次 thinkingContent 变化时自动滚入视野 */}
+          <div ref={bottomRef} />
+        </div>
+      </div>
+    </details>
+  )
+}
 
 function AnalyzingAnimation() {
   const { cancelAnalyze } = useReimbursementStore()
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10 py-20">
+    <div className="flex flex-col items-center justify-center gap-8 py-16">
       {/* ---- 图标区域 ---- */}
       <div className="relative flex items-center justify-center">
         {/* 同心圆波纹 */}
@@ -110,6 +285,9 @@ function AnalyzingAnimation() {
           />
         ))}
       </div>
+
+      {/* ---- AI 思考面板 ---- */}
+      <ThinkingPanel />
 
       {/* ---- 取消按钮 ---- */}
       <Button variant="ghost" size="sm" onClick={cancelAnalyze}>

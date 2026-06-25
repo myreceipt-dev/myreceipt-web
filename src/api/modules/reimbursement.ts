@@ -14,6 +14,16 @@ export type {
 };
 
 // ============================================================
+// SSE 事件类型
+// ============================================================
+
+export interface StreamHandlers {
+  onThinking?: (text: string) => void;
+  onProgress?: (text: string) => void;
+  onCancelled?: () => void;
+}
+
+// ============================================================
 // Reimbursement API
 // ============================================================
 
@@ -116,4 +126,123 @@ export async function exportReimbursement(
     body: form,
     responseType: "blob",
   });
+}
+
+// ============================================================
+// 流式 API（SSE）
+// ============================================================
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
+/**
+ * 解析 SSE 文本流，按 event type 调度回调
+ * 返回最终解析的 result 对象，或抛出错误
+ */
+async function consumeSSEStream<T>(
+  response: Response,
+  handlers: StreamHandlers,
+  signal?: AbortSignal,
+): Promise<T> {
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(`请求失败 (${response.status}): ${text}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("浏览器不支持流式读取");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const checkAbort = () => {
+    if (signal?.aborted) {
+      reader.cancel();
+      handlers.onCancelled?.();
+      throw new DOMException("Aborted", "AbortError");
+    }
+  };
+
+  while (true) {
+    checkAbort();
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    let currentEvent = "";
+    let currentData = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim();
+        currentData = "";
+      } else if (line.startsWith("data: ")) {
+        // 支持多行 SSE data（thinking 文本含换行）
+        currentData += (currentData ? "\n" : "") + line.slice(6);
+      } else if (line === "" && currentEvent && currentData) {
+        // 空行 = 事件结束
+        if (currentEvent === "thinking") {
+          handlers.onThinking?.(currentData);
+        } else if (currentEvent === "progress") {
+          handlers.onProgress?.(currentData);
+        } else if (currentEvent === "result") {
+          return JSON.parse(currentData) as T;
+        } else if (currentEvent === "error") {
+          const err = JSON.parse(currentData);
+          throw new Error(err.message || "未知错误");
+        }
+        currentEvent = "";
+        currentData = "";
+      }
+    }
+  }
+
+  throw new Error("流在返回结果前意外结束");
+}
+
+/** 手动模式：流式分析（图片 + 模板） */
+export async function analyzeReimbursementStream(
+  images: File[],
+  template: File,
+  handlers: StreamHandlers,
+  signal?: AbortSignal,
+): Promise<ReimbursementAnalysis> {
+  const form = new FormData();
+  images.forEach((img) => form.append("images", img));
+  form.append("template", template);
+
+  const response = await fetch(`${API_BASE}/reimbursement/analyze-stream`, {
+    method: "POST",
+    body: form,
+    signal,
+    credentials: "include",
+    headers: { Accept: "text/event-stream" },
+  });
+
+  return consumeSSEStream<ReimbursementAnalysis>(response, handlers, signal);
+}
+
+/** ZIP 模式：流式分析（压缩包） */
+export async function autoAnalyzeStream(
+  zipfile: File,
+  handlers: StreamHandlers,
+  geminiApiKey?: string,
+  model?: string,
+  signal?: AbortSignal,
+): Promise<ZipAnalysisOutput> {
+  const form = new FormData();
+  form.append("zipfile", zipfile);
+  if (geminiApiKey) form.append("geminiApiKey", geminiApiKey);
+  if (model) form.append("model", model);
+
+  const response = await fetch(`${API_BASE}/reimbursement/auto-analyze-stream`, {
+    method: "POST",
+    body: form,
+    signal,
+    credentials: "include",
+    headers: { Accept: "text/event-stream" },
+  });
+
+  return consumeSSEStream<ZipAnalysisOutput>(response, handlers, signal);
 }

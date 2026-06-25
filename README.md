@@ -70,7 +70,8 @@ src/
   → 可选: Gemini API Key
 
 步骤2: AI 分析 (step-analyzing)
-  → 调用后端 API 进行 OCR 识别 + 数据提取
+  → 调用后端 SSE 流式 API，实时展示 AI 思考过程
+  → Thinking 面板将 AI 推理拆分为结构化步骤，打字机动画逐字显示
   → 返回结构化报销数据 (ReimbursementAnalysis)
 
 步骤3: 数据预览编辑 (step-review)
@@ -96,6 +97,7 @@ interface ReimbursementState {
   zipfile: File | null           // ZIP 文件
   analysisResult: ReimbursementAnalysis | null  // 分析结果
   analyzing: boolean             // 是否正在分析
+  thinkingContent: string        // AI 思考过程（SSE 流式累积）
   error: string | null           // 错误信息
 }
 ```

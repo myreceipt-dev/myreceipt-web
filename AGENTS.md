@@ -35,3 +35,29 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | POST `/reimbursement/auto-analyze` | 否 | AI 解析 Zip 包 |
 | POST `/reimbursement/auto-export` | 否 | 结构化数据+Zip→输出Zip |
 | POST `/reimbursement/auto-parse` | 否 | auto-analyze+auto-export 一步到位 |
+| POST `/reimbursement/analyze-stream` | 否 | 🔥 SSE 流式解析 (图片+模板)，含 AI 思考过程 |
+| POST `/reimbursement/auto-analyze-stream` | 否 | 🔥 SSE 流式解析 Zip 包，含 AI 思考过程 |
+
+流式端点 (`*-stream`) 返回 `text/event-stream`（SSE），事件类型：
+- `thinking` — AI 推理过程文本（Gemini thought blocks），前端展示为结构化步骤
+- `progress` — 最终 JSON 的流式片段
+- `result` — 完整分析结果 JSON（后处理完成）
+- `error` — 错误信息
+
+### 前端架构要点
+
+**Thinking 面板** (`src/components/reimbursement/step-analyzing.tsx`):
+- 解析 SSE `thinking` 事件的 `**Title**` 格式，拆分为结构化步骤列表
+- 时间线 UI：已完成步骤 → 绿色 ✓，当前步骤 → 旋转 Spinner + 蓝色卡片
+- 最新步骤标题/正文使用 TypewriterText 逐字打字动画（12-15ms/字）
+- 新 chunk 到达时自动判断接续还是新步骤，打字机从断点继续
+
+**SSE 消费** (`src/api/modules/reimbursement.ts`):
+- `analyzeReimbursementStream()` / `autoAnalyzeStream()` 使用 `fetch()` + `ReadableStream`
+- 按 `\n\n` 分割 SSE 事件，聚合多行 `data:` 为完整数据后回调
+- 支持 AbortController 取消
+
+**Store** (`src/stores/reimbursement-store.ts`):
+- `thinkingContent` 状态字段累积所有 thinking 文本
+- `analyze()` action 内部按 mode 自动选择流式或同步 API
+- `cancelAnalyze()` 触发 AbortController → 中断 fetch + reader

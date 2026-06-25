@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import {
   analyzeReimbursement,
+  analyzeReimbursementStream,
   autoAnalyze,
+  autoAnalyzeStream,
   exportReimbursement,
   autoExport,
   type ReimbursementAnalysis,
@@ -22,6 +24,9 @@ interface ReimbursementState {
   error: string | null;
   analyzing: boolean;
   exporting: boolean;
+
+  // streaming thinking content
+  thinkingContent: string;
 
   // internal: AbortController for cancellation
   _abortController: AbortController | null;
@@ -49,6 +54,7 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
   error: null,
   analyzing: false,
   exporting: false,
+  thinkingContent: "",
   _abortController: null,
 
   setStep: (step) => set({ step }),
@@ -63,18 +69,53 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
     prev?.abort();
 
     const controller = new AbortController();
-    set({ step: 2, error: null, analyzing: true, _abortController: controller });
+    set({
+      step: 2,
+      error: null,
+      analyzing: true,
+      thinkingContent: "",
+      _abortController: controller,
+    });
 
     try {
       if (mode === "manual") {
         if (!template) throw new Error("请上传模板文件");
         if (images.length === 0) throw new Error("请上传支付凭证截图 / 发票图片");
-        const result = await analyzeReimbursement(images, template, controller.signal);
-        set({ analysisResult: result, step: 3, analyzing: false, _abortController: null });
+        const result = await analyzeReimbursementStream(
+          images,
+          template,
+          {
+            onThinking: (text) =>
+              set((s) => ({ thinkingContent: s.thinkingContent + text })),
+            onCancelled: () => set({ step: 1, analyzing: false }),
+          },
+          controller.signal,
+        );
+        set({
+          analysisResult: result,
+          step: 3,
+          analyzing: false,
+          _abortController: null,
+        });
       } else {
         if (!zipfile) throw new Error("请上传 ZIP 文件");
-        const result = await autoAnalyze(zipfile, geminiApiKey, model, controller.signal);
-        set({ analysisResult: result, step: 3, analyzing: false, _abortController: null });
+        const result = await autoAnalyzeStream(
+          zipfile,
+          {
+            onThinking: (text) =>
+              set((s) => ({ thinkingContent: s.thinkingContent + text })),
+            onCancelled: () => set({ step: 1, analyzing: false }),
+          },
+          geminiApiKey,
+          model,
+          controller.signal,
+        );
+        set({
+          analysisResult: result,
+          step: 3,
+          analyzing: false,
+          _abortController: null,
+        });
       }
     } catch (err) {
       // If aborted, just go back to upload step silently
@@ -138,6 +179,7 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
       error: null,
       analyzing: false,
       exporting: false,
+      thinkingContent: "",
       _abortController: null,
     });
   },
