@@ -189,8 +189,14 @@ async function consumeSSEStream<T>(
         } else if (currentEvent === "result") {
           return JSON.parse(currentData) as T;
         } else if (currentEvent === "error") {
-          const err = JSON.parse(currentData);
-          throw new Error(err.message || "未知错误");
+          let message = currentData;
+          try {
+            const err = JSON.parse(currentData);
+            message = err.message || currentData;
+          } catch {
+            // 非 JSON 格式，直接用原文本
+          }
+          throw new Error(message);
         }
         currentEvent = "";
         currentData = "";
