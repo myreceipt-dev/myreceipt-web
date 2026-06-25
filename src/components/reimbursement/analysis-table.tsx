@@ -2,12 +2,22 @@
 
 import { useState } from 'react'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { Plus, Trash2 } from 'lucide-react'
 import type { ReimbursementAnalysis } from '@/api/modules/reimbursement'
@@ -38,7 +48,8 @@ function toDateInputValue(v: unknown): string {
     const parts = s.split(/[-/]/)
     if (parts.length === 3) {
       const [a, b, c] = parts.map(Number)
-      if (a > 1000) return `${a}-${String(b).padStart(2, '0')}-${String(c).padStart(2, '0')}`
+      if (a > 1000)
+        return `${a}-${String(b).padStart(2, '0')}-${String(c).padStart(2, '0')}`
       return `${c}-${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}`
     }
     return s
@@ -136,7 +147,7 @@ export function AnalysisTable({ data, onChange }: Props) {
                         type="date"
                         value={toDateInputValue(row[col])}
                         onChange={(e) => updateCell(ri, col, e.target.value)}
-                        className="h-8 min-w-[130px] rounded-md border bg-background px-2 text-sm"
+                        className="h-8 min-w-32.5 rounded-md border bg-background px-2 text-sm"
                       />
                     </TableCell>
                   ) : (
@@ -144,7 +155,7 @@ export function AnalysisTable({ data, onChange }: Props) {
                       <Input
                         value={String(row[col] ?? '')}
                         onChange={(e) => updateCell(ri, col, e.target.value)}
-                        className="h-8 min-w-[100px] text-sm"
+                        className="h-8 min-w-25 text-sm"
                       />
                     </TableCell>
                   ),
@@ -172,22 +183,33 @@ export function AnalysisTable({ data, onChange }: Props) {
           </TableBody>
         </Table>
         {rowsData.length === 0 && (
-          <p className="p-4 text-center text-sm text-muted-foreground">暂无数据</p>
+          <p className="p-4 text-center text-sm text-muted-foreground">
+            暂无数据
+          </p>
         )}
       </div>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={deleteIndex !== null} onOpenChange={(open) => !open && setDeleteIndex(null)}>
+      <Dialog
+        open={deleteIndex !== null}
+        onOpenChange={(open) => !open && setDeleteIndex(null)}
+      >
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>
-              确定要删除第 {deleteIndex !== null ? data.dataStartRow + deleteIndex : ''} 行吗？此操作不可撤销。
+              确定要删除第{' '}
+              {deleteIndex !== null ? data.dataStartRow + deleteIndex : ''}{' '}
+              行吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteIndex(null)}>取消</Button>
-            <Button variant="destructive" onClick={confirmDelete}>删除</Button>
+            <Button variant="outline" onClick={() => setDeleteIndex(null)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              删除
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
