@@ -34,3 +34,21 @@ export async function logout() {
 export async function fetchMe() {
   return unwrap(await request<ApiResponse<User>>("/auth/me"));
 }
+
+export async function forgotPassword(email: string) {
+  return unwrap(
+    await request<ApiResponse<{ message: string }>>("/auth/forgot-password", {
+      method: "POST",
+      body: { email },
+    })
+  );
+}
+
+export async function resetPassword(email: string, code: string, newPassword: string) {
+  return unwrap(
+    await request<ApiResponse<{ message: string }>>("/auth/reset-password", {
+      method: "POST",
+      body: { email, code, newPassword },
+    })
+  );
+}
