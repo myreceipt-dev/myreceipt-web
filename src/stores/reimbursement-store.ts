@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import {
   analyzeReimbursement,
-  autoAnalyze,
+  autoAnalyzeV2,
   exportReimbursement,
   autoExport,
   type ReimbursementAnalysis,
@@ -92,7 +92,7 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
         });
       } else {
         if (!zipfile) throw new Error("请上传 ZIP 文件");
-        const result = await autoAnalyze(
+        const result = await autoAnalyzeV2(
           zipfile,
           geminiApiKey,
           model,

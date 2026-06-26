@@ -84,6 +84,26 @@ export async function autoAnalyze(
   );
 }
 
+/** ZIP 上传（V2 多轮对话）：解压并分析，文件多时更稳定 */
+export async function autoAnalyzeV2(
+  zipfile: File,
+  geminiApiKey?: string,
+  model?: string,
+  signal?: AbortSignal
+) {
+  const form = new FormData();
+  form.append("zipfile", zipfile);
+  if (geminiApiKey) form.append("geminiApiKey", geminiApiKey);
+  if (model) form.append("model", model);
+  return unwrap(
+    await request<ApiResponse<ZipAnalysisOutput>>("/reimbursement/auto-analyze-v2", {
+      method: "POST",
+      body: form,
+      signal,
+    })
+  );
+}
+
 /** ZIP 上传：根据分析结果导出 Excel + 重命名图片，返回 ZIP */
 export async function autoExport(zipfile: File, data: ZipAnalysisOutput) {
   const form = new FormData();
