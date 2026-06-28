@@ -3,6 +3,8 @@
 import { useReimbursementStore } from "@/stores/reimbursement-store";
 import { FileUploadZone } from "./file-upload-zone";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Brain } from "lucide-react";
 
 const IMAGE_ACCEPT = {
   "image/*": [".png", ".jpg", ".jpeg", ".webp", ".bmp"],
@@ -30,6 +32,8 @@ export function StepUpload({ mode }: StepUploadProps) {
     setZipfile,
     analyze,
     error,
+    enableThinking,
+    setEnableThinking,
   } = useReimbursementStore();
 
   const canSubmit =
@@ -80,6 +84,23 @@ export function StepUpload({ mode }: StepUploadProps) {
           {error}
         </div>
       )}
+
+      {/* Thinking 开关 */}
+      <div className="flex items-center justify-between rounded-lg border p-4">
+        <div className="flex items-center gap-3">
+          <Brain className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">AI 思考过程</p>
+            <p className="text-xs text-muted-foreground">
+              开启后实时展示 AI 的推理步骤，分析耗时可能略长
+            </p>
+          </div>
+        </div>
+        <Switch
+          checked={enableThinking}
+          onCheckedChange={setEnableThinking}
+        />
+      </div>
 
       <div className="flex justify-end">
         <Button onClick={() => analyze()} disabled={!canSubmit} size="lg">

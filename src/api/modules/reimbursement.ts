@@ -233,10 +233,12 @@ export async function analyzeReimbursementStream(
   template: File,
   handlers: StreamHandlers,
   signal?: AbortSignal,
+  enableThinking?: boolean,
 ): Promise<ReimbursementAnalysis> {
   const form = new FormData();
   images.forEach((img) => form.append("images", img));
   form.append("template", template);
+  if (enableThinking) form.append("enableThinking", "true");
 
   const response = await fetch(`${API_BASE}/reimbursement/analyze-stream`, {
     method: "POST",
@@ -247,6 +249,32 @@ export async function analyzeReimbursementStream(
   });
 
   return consumeSSEStream<ReimbursementAnalysis>(response, handlers, signal);
+}
+
+/** ZIP 模式 V2：流式多轮分析（压缩包），支持 enableThinking */
+export async function autoAnalyzeStreamV2(
+  zipfile: File,
+  handlers: StreamHandlers,
+  geminiApiKey?: string,
+  model?: string,
+  signal?: AbortSignal,
+  enableThinking?: boolean,
+): Promise<ZipAnalysisOutput> {
+  const form = new FormData();
+  form.append("zipfile", zipfile);
+  if (geminiApiKey) form.append("geminiApiKey", geminiApiKey);
+  if (model) form.append("model", model);
+  if (enableThinking) form.append("enableThinking", "true");
+
+  const response = await fetch(`${API_BASE}/reimbursement/auto-analyze-stream-v2`, {
+    method: "POST",
+    body: form,
+    signal,
+    credentials: "include",
+    headers: { Accept: "text/event-stream" },
+  });
+
+  return consumeSSEStream<ZipAnalysisOutput>(response, handlers, signal);
 }
 
 /** ZIP 模式：流式分析（压缩包） */

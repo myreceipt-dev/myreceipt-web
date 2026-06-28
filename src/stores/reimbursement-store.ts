@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import {
   analyzeReimbursement,
+  analyzeReimbursementStream,
   autoAnalyzeV2,
+  autoAnalyzeStreamV2,
   exportReimbursement,
   autoExport,
   type ReimbursementAnalysis,
@@ -25,6 +27,10 @@ interface ReimbursementState {
 
   // streaming thinking content
   thinkingContent: string;
+
+  // thinking toggle
+  enableThinking: boolean;
+  setEnableThinking: (v: boolean) => void;
 
   // internal: AbortController for cancellation
   _abortController: AbortController | null;
@@ -53,16 +59,18 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
   analyzing: false,
   exporting: false,
   thinkingContent: "",
+  enableThinking: false,
   _abortController: null,
 
   setStep: (step) => set({ step }),
   setMode: (mode) => set({ mode }),
+  setEnableThinking: (v) => set({ enableThinking: v }),
   setImages: (images) => set({ images }),
   setTemplate: (template) => set({ template }),
   setZipfile: (zipfile) => set({ zipfile }),
 
   async analyze(geminiApiKey?, model?) {
-    const { mode, images, template, zipfile, _abortController: prev } = get();
+    const { mode, images, template, zipfile, enableThinking, _abortController: prev } = get();
     // Abort any in-flight request
     prev?.abort();
 
@@ -79,31 +87,82 @@ export const useReimbursementStore = create<ReimbursementState>((set, get) => ({
       if (mode === "manual") {
         if (!template) throw new Error("请上传模板文件");
         if (images.length === 0) throw new Error("请上传支付凭证截图 / 发票图片");
-        const result = await analyzeReimbursement(
-          images,
-          template,
-          controller.signal,
-        );
-        set({
-          analysisResult: result,
-          step: 3,
-          analyzing: false,
-          _abortController: null,
-        });
+
+        if (enableThinking) {
+          // 流式路径：实时展示 AI 思考过程
+          const result = await analyzeReimbursementStream(
+            images,
+            template,
+            {
+              onThinking: (text) => {
+                set({ thinkingContent: get().thinkingContent + text });
+              },
+            },
+            controller.signal,
+            true,
+          );
+          set({
+            analysisResult: result,
+            step: 3,
+            analyzing: false,
+            _abortController: null,
+          });
+        } else {
+          const result = await analyzeReimbursement(
+            images,
+            template,
+            controller.signal,
+          );
+          set({
+            analysisResult: result,
+            step: 3,
+            analyzing: false,
+            _abortController: null,
+          });
+        }
       } else {
         if (!zipfile) throw new Error("请上传 ZIP 文件");
-        const result = await autoAnalyzeV2(
-          zipfile,
-          geminiApiKey,
-          model,
-          controller.signal,
-        );
-        set({
-          analysisResult: result,
-          step: 3,
-          analyzing: false,
-          _abortController: null,
-        });
+
+        if (enableThinking) {
+          // 流式路径：多轮对话 + SSE 进度推送
+          const result = await autoAnalyzeStreamV2(
+            zipfile,
+            {
+              onThinking: (text) => {
+                set({ thinkingContent: get().thinkingContent + text });
+              },
+              onProgress: (text) => {
+                set({
+                  thinkingContent:
+                    get().thinkingContent + `**${text}**\n`,
+                });
+              },
+            },
+            geminiApiKey,
+            model,
+            controller.signal,
+            true,
+          );
+          set({
+            analysisResult: result,
+            step: 3,
+            analyzing: false,
+            _abortController: null,
+          });
+        } else {
+          const result = await autoAnalyzeV2(
+            zipfile,
+            geminiApiKey,
+            model,
+            controller.signal,
+          );
+          set({
+            analysisResult: result,
+            step: 3,
+            analyzing: false,
+            _abortController: null,
+          });
+        }
       }
     } catch (err) {
       // If aborted, just go back to upload step silently

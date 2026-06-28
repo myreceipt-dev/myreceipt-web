@@ -7,12 +7,13 @@ import { StepAnalyzing } from '@/components/reimbursement/step-analyzing'
 import { StepReview } from '@/components/reimbursement/step-review'
 import { StepDownload } from '@/components/reimbursement/step-download'
 import { StepIndicator } from '@/components/reimbursement/step-indicator'
+import { Upload, Sparkles, Eye, Download } from 'lucide-react'
 
 const STEPS = [
-  { index: 1, label: '上传模板与截图' },
-  { index: 2, label: 'AI 分析' },
-  { index: 3, label: '预览编辑' },
-  { index: 4, label: '导出 Excel' },
+  { index: 1, label: '上传模板与截图', icon: Upload },
+  { index: 2, label: 'AI 分析', icon: Sparkles },
+  { index: 3, label: '预览编辑', icon: Eye },
+  { index: 4, label: '导出 Excel', icon: Download },
 ]
 
 export default function FillPage() {
